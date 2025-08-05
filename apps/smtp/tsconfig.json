@@ -1,5 +1,5 @@
 {
-  "extends": "@saleor/typescript-config-apps/base.json",
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": "."
   },

@@ -180,15 +180,27 @@ export class SmtpConfigurationService implements IGetSmtpConfiguration {
    * Get list of configurations. Optionally filter them.
    */
   getConfigurations(filter?: FilterConfigurationsArgs) {
-    logger.debug("Get configurations");
+    logger.debug("Get configurations", { filter });
 
     return this.getConfigurationRoot().andThen((config) => {
-      return okAsync(
-        filterConfigurations<SmtpConfiguration>({
-          configurations: config.configurations,
-          filter,
-        }),
-      );
+      logger.warn("DEBUG: Raw configurations from metadata", { 
+        configCount: config.configurations.length,
+        configs: config.configurations,
+        saleorApiUrl: this.metadataConfigurator.saleorApiUrl || "unknown"
+      });
+      
+      const filtered = filterConfigurations<SmtpConfiguration>({
+        configurations: config.configurations,
+        filter,
+      });
+      
+      logger.warn("DEBUG: Filtered configurations", { 
+        filteredCount: filtered.length,
+        filtered,
+        originalFilter: filter 
+      });
+      
+      return okAsync(filtered);
     });
   }
 

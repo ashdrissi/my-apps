@@ -3,6 +3,7 @@ import { FileAPL } from "@saleor/app-sdk/APL/file";
 import { SaleorCloudAPL } from "@saleor/app-sdk/APL/saleor-cloud";
 import { UpstashAPL } from "@saleor/app-sdk/APL/upstash";
 import { SaleorApp } from "@saleor/app-sdk/saleor-app";
+import { MultiDomainFileAPL } from "./lib/multi-domain-file-apl";
 
 const aplType = process.env.APL ?? "file";
 
@@ -15,6 +16,12 @@ switch (aplType) {
     break;
 
   case "file":
+    apl = new FileAPL();
+
+    break;
+    
+  case "EnvAPL":
+    // EnvAPL is not a standard APL type, fallback to FileAPL
     apl = new FileAPL();
 
     break;

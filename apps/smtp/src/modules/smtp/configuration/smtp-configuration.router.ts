@@ -24,9 +24,25 @@ import { smtpDefaultEmptyConfigurations } from "./smtp-default-empty-configurati
 export const throwTrpcErrorFromConfigurationServiceError = (
   error: typeof SmtpConfigurationService.SmtpConfigurationServiceError | unknown,
 ) => {
-  createLogger("trpcError").debug("Error from TRPC", { error });
+  const logger = createLogger("trpcError");
+  
+  logger.error("Error from TRPC", { 
+    error,
+    errorMessage: error instanceof Error ? error.message : String(error),
+    errorStack: error instanceof Error ? error.stack : undefined,
+    errorName: error instanceof Error ? error.name : undefined,
+    errorConstructor: error instanceof Error ? error.constructor.name : undefined
+  });
 
   if (error instanceof SmtpConfigurationService.SmtpConfigurationServiceError) {
+    logger.error("SmtpConfigurationServiceError details", {
+      constructor: error["constructor"],
+      isConfigNotFoundError: error["constructor"] === SmtpConfigurationService.ConfigNotFoundError,
+      isEventConfigNotFoundError: error["constructor"] === SmtpConfigurationService.EventConfigNotFoundError,
+      isCantFetchConfigError: error["constructor"] === SmtpConfigurationService.CantFetchConfigError,
+      isWrongSaleorVersionError: error["constructor"] === SmtpConfigurationService.WrongSaleorVersionError
+    });
+    
     switch (error["constructor"]) {
       case SmtpConfigurationService.ConfigNotFoundError:
         throw new TRPCError({
@@ -53,6 +69,11 @@ export const throwTrpcErrorFromConfigurationServiceError = (
         });
     }
   }
+
+  logger.error("Unhandled error, throwing generic internal server error", {
+    errorType: typeof error,
+    errorString: String(error)
+  });
 
   throw new TRPCError({
     code: "INTERNAL_SERVER_ERROR",
@@ -98,15 +119,41 @@ export const smtpConfigurationRouter = router({
       const logger = createLogger("smtpConfigurationRouter", { saleorApiUrl: ctx.saleorApiUrl });
 
       logger.debug(input, "smtpConfigurationRouter.create called");
-      const newConfiguration = {
-        ...smtpDefaultEmptyConfigurations.configuration(),
-        ...input,
-      };
+      
+      try {
+        const newConfiguration = {
+          ...smtpDefaultEmptyConfigurations.configuration(),
+          ...input,
+        };
 
-      return await ctx.smtpConfigurationService.createConfiguration(newConfiguration).match(
-        (v) => v,
-        (e) => throwTrpcErrorFromConfigurationServiceError(e),
-      );
+        logger.debug("About to call createConfiguration service method");
+        
+        const result = await ctx.smtpConfigurationService.createConfiguration(newConfiguration);
+        
+        return result.match(
+          (v) => {
+            logger.debug("createConfiguration service method succeeded");
+            return v;
+          },
+          (e) => {
+            logger.error("createConfiguration service method failed", {
+              error: e,
+              errorMessage: e.message,
+              errorStack: e.stack,
+              errorName: e.name,
+              errorConstructor: e.constructor.name
+            });
+            throwTrpcErrorFromConfigurationServiceError(e);
+          },
+        );
+      } catch (error) {
+        logger.error("Unexpected error in createConfiguration router", {
+          error,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined
+        });
+        throw error;
+      }
     }),
   deleteConfiguration: protectedWithConfigurationServices
     .meta({ updateWebhooks: true })

@@ -7,7 +7,7 @@
     "build": "next build",
     "check-types": "tsc",
     "deploy": "tsx --require dotenv/config ./scripts/deploy.ts",
-    "dev": "NODE_OPTIONS='--inspect' next dev",
+    "dev": "NODE_OPTIONS='--inspect=9231' next dev",
     "fetch-schema": "curl https://raw.githubusercontent.com/saleor/saleor/${npm_package_saleor_schemaVersion}/saleor/graphql/schema.graphql > graphql/schema.graphql",
     "generate": "graphql-codegen",
     "lint": "eslint .",

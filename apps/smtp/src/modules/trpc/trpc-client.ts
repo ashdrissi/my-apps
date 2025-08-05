@@ -4,6 +4,7 @@ import { createTRPCNext } from "@trpc/next";
 
 import { createLogger } from "../../logger";
 import { appBridgeInstance } from "../../pages/_app";
+import { AppBridgeDebugger } from "../debug/app-bridge-debugger";
 import type { AppRouter } from "./trpc-app-router";
 
 function getBaseUrl() {
@@ -22,21 +23,39 @@ export const trpcClient = createTRPCNext<AppRouter>({
         httpBatchLink({
           url: `${getBaseUrl()}/api/trpc`,
           headers() {
-            const { token, saleorApiUrl } = appBridgeInstance?.getState() || {};
+            const state = appBridgeInstance?.getState() || {};
+            const { token, saleorApiUrl } = state as { token: string | undefined; saleorApiUrl: string | undefined };
 
             if (!token || !saleorApiUrl) {
-              logger.error(
-                "Can't initialize tRPC client before establishing the App Bridge connection",
+              logger.warn(
+                "AppBridge not ready - missing token or saleorApiUrl",
+                { 
+                  hasToken: !!token, 
+                  hasSaleorApiUrl: !!saleorApiUrl,
+                  state: state 
+                }
               );
-              throw new Error("Token and Saleor API URL unknown");
+              
+              // Log detailed debugging information
+              AppBridgeDebugger.logConnectionFailure(appBridgeInstance, "TRPC client headers");
+              
+              // Instead of throwing, return empty headers and let the server handle the missing auth
+              // This allows the request to reach the server where we can provide better error messages
+              return {};
             }
+
+            logger.debug("AppBridge headers ready", {
+              hasToken: !!token,
+              saleorApiUrl,
+              tokenPreview: token ? `${token.substring(0, 10)}...` : undefined
+            });
 
             return {
               /**
                * Attach headers from app to client requests, so tRPC can add them to context
                */
-              [SALEOR_AUTHORIZATION_BEARER_HEADER]: appBridgeInstance?.getState().token,
-              [SALEOR_API_URL_HEADER]: appBridgeInstance?.getState().saleorApiUrl,
+              [SALEOR_AUTHORIZATION_BEARER_HEADER]: token,
+              [SALEOR_API_URL_HEADER]: saleorApiUrl,
             };
           },
         }),

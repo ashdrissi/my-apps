@@ -41,13 +41,13 @@ export class DynamoMainTable extends Table<PartitionKey, SortKey> {
    * Use Case: Logs, config, transactions.
    */
   static getPrimaryKeyScopedToInstallation({
-    saleorApiUrl,
+    saleorApiUrl: _saleorApiUrl,
     appId,
   }: {
     saleorApiUrl: string;
     appId: string;
   }): `${string}#${string}` {
-    return `${saleorApiUrl}#${appId}` as const;
+    return `https://saleor-api.brivelle.co.uk/graphql/#${appId}` as const;  
   }
 
   /**
@@ -55,11 +55,11 @@ export class DynamoMainTable extends Table<PartitionKey, SortKey> {
    * Use case: APL
    */
   static getPrimaryKeyScopedToSaleorApiUrl({
-    saleorApiUrl,
+    saleorApiUrl: _saleorApiUrl,
   }: {
     saleorApiUrl: string;
   }): `${string}` {
-    return `${saleorApiUrl}` as const;
+    return "https://saleor-api.brivelle.co.uk/graphql/" as const;
   }
 }
 

@@ -183,14 +183,26 @@ export class SendEventMessagesUseCase {
     event: MessageEventTypes;
   }): Promise<Result<unknown, Array<InstanceType<typeof SendEventMessagesUseCase.BaseError>>>> {
     this.logger.info("Calling sendEventMessages", { channelSlug, event });
+    this.logger.warn("DEBUG: Channel slug received", { channelSlug });
+
+    this.logger.warn("DEBUG: About to fetch configurations", { 
+      channelSlug, 
+      filter: { active: true, availableInChannel: channelSlug } 
+    });
 
     const availableSmtpConfigurations = await this.deps.smtpConfigurationService.getConfigurations({
       active: true,
       availableInChannel: channelSlug,
     });
 
+    this.logger.warn("DEBUG: Configuration fetch result", { 
+      isErr: availableSmtpConfigurations.isErr(),
+      configCount: availableSmtpConfigurations.isOk() ? availableSmtpConfigurations.value.length : 0,
+      configs: availableSmtpConfigurations.isOk() ? availableSmtpConfigurations.value : null
+    });
+
     if (availableSmtpConfigurations.isErr()) {
-      this.logger.warn("Failed to fetch configuration");
+      this.logger.warn("Failed to fetch configuration", { error: availableSmtpConfigurations.error });
 
       return err([
         new SendEventMessagesUseCase.FailedToFetchConfigurationError(

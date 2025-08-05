@@ -32,7 +32,12 @@ const handler: NextJsWebhookHandler<NotifySubscriptionPayload> = async (req, res
 
   const { payload, authData } = context;
 
-  const { channel_slug: channel, recipient_email: recipientEmail } = payload.payload;
+  logger.warn("DEBUG: Full payload received", { payload });
+
+  const { order, recipient_email: recipientEmail } = payload.payload;
+  const channel = order?.channel_slug;
+  
+  logger.warn("DEBUG: Extracted channel and email", { channel, recipientEmail });
 
   /**
    * Since NOTIFY can be send on events unrelated to this app, lack of mapping means the App does not support it

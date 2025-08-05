@@ -1,8 +1,0 @@
-mutation RemoveWebhook($id: ID!) {
-  webhookDelete(id: $id){
-    errors{
-      field
-      message
-    }
-  }
-}
